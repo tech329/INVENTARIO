@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles del Bien</title>
+    <style>
+        :root {
+            --color-primario: #001749;
+            --color-acento: #e48410;
+            --color-fondo: #f4f6f9;
+            --color-texto: #333333;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--color-fondo);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            border-top: 5px solid var(--color-acento);
+        }
+        .header {
+            background-color: var(--color-primario);
+            padding: 25px 20px;
+            text-align: center;
+        }
+        .logo { max-width: 200px; height: auto; }
+        .content { padding: 25px; }
+        .item { margin-bottom: 20px; }
+        .item-label {
+            font-weight: bold;
+            color: var(--color-primario);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .item-value {
+            font-size: 1.1em;
+            color: var(--color-texto);
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--color-acento);
+            min-height: 1.2em; /* Evita que el layout salte mientras carga */
+        }
+        .message-box {
+            text-align: center;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+        .error { color: #D8000C; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <img src="https://i.postimg.cc/zBPmbxNT/TRANSPARENTE-min.png" alt="Logo de la Empresa" class="logo">
+        </div>
+        <div class="content" id="content-area">
+            <!-- El contenido se generará aquí con JavaScript -->
+            <div class="item">
+                <div class="item-label">Descripción</div>
+                <div class="item-value" id="descripcion-val">Cargando...</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Cantidad</div>
+                <div class="item-value" id="cantidad-val">Cargando...</div>
+            </div>
+            <div class="item">
+                <div class="item-label">Responsable</div>
+                <div class="item-value" id="responsable-val">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ¡CONFIGURACIÓN IMPORTANTE! ---
+        // Pega aquí la URL de tu aplicación web de Apps Script (la API).
+        const API_URL = "https://script.google.com/macros/s/AKfycbygAS6p41UE0YNoh7JO-SQpmF8YB4VyPMBOE6SZQA584jfGY3buOFjXIuUDk21jeaPO/exec";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const contentArea = document.getElementById('content-area');
+            
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const codigo = params.get('codigo');
+
+                if (!codigo) {
+                    throw new Error("No se proporcionó un código en la URL.");
+                }
+
+                // --- ¡CORRECCIÓN DEFINITIVA PARA CORS! ---
+                // Se realiza una solicitud POST, que es el método estándar para APIs.
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', // Apps Script requiere esta cabecera para POST simple
+                    },
+                    body: JSON.stringify({ codigo: codigo }) // Enviamos el código en el cuerpo de la solicitud
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error de red: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('descripcion-val').textContent = result.data.descripcion;
+                    document.getElementById('cantidad-val').textContent = result.data.cantidad;
+                    document.getElementById('responsable-val').textContent = result.data.responsable;
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                contentArea.innerHTML = `
+                    <div class="message-box error">
+                        <h2>Error</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
