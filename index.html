@@ -51,7 +51,6 @@
             padding: 12px;
             background-color: #f9f9f9;
             border-left: 4px solid var(--color-acento);
-            min-height: 1.2em; /* Evita que el layout salte mientras carga */
         }
         .message-box {
             text-align: center;
@@ -68,63 +67,42 @@
         </div>
         <div class="content" id="content-area">
             <!-- El contenido se generará aquí con JavaScript -->
-            <div class="item">
-                <div class="item-label">Descripción</div>
-                <div class="item-value" id="descripcion-val">Cargando...</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Cantidad</div>
-                <div class="item-value" id="cantidad-val">Cargando...</div>
-            </div>
-            <div class="item">
-                <div class="item-label">Responsable</div>
-                <div class="item-value" id="responsable-val">Cargando...</div>
-            </div>
         </div>
     </div>
 
     <script>
-        // --- ¡CONFIGURACIÓN IMPORTANTE! ---
-        // Pega aquí la URL de tu aplicación web de Apps Script (la API).
-        const API_URL = "https://script.google.com/macros/s/AKfycbygAS6p41UE0YNoh7JO-SQpmF8YB4VyPMBOE6SZQA584jfGY3buOFjXIuUDk21jeaPO/exec";
-
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const contentArea = document.getElementById('content-area');
-            
             try {
                 const params = new URLSearchParams(window.location.search);
-                const codigo = params.get('codigo');
 
-                if (!codigo) {
-                    throw new Error("No se proporcionó un código en la URL.");
+                // Leemos los datos directamente de la URL
+                const descripcion = params.get('desc');
+                const cantidad = params.get('cant');
+                const responsable = params.get('resp');
+
+                if (!descripcion || !cantidad || !responsable) {
+                    throw new Error("Faltan datos en la URL. El QR podría ser inválido.");
                 }
 
-                // --- ¡CORRECCIÓN DEFINITIVA PARA CORS! ---
-                // Se realiza una solicitud POST, que es el método estándar para APIs.
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    redirect: 'follow',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // Apps Script requiere esta cabecera para POST simple
-                    },
-                    body: JSON.stringify({ codigo: codigo }) // Enviamos el código en el cuerpo de la solicitud
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Error de red: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    document.getElementById('descripcion-val').textContent = result.data.descripcion;
-                    document.getElementById('cantidad-val').textContent = result.data.cantidad;
-                    document.getElementById('responsable-val').textContent = result.data.responsable;
-                } else {
-                    throw new Error(result.error);
-                }
+                // Creamos y añadimos el HTML dinámicamente
+                contentArea.innerHTML = `
+                    <div class="item">
+                        <div class="item-label">Descripción</div>
+                        <div class="item-value">${descripcion}</div>
+                    </div>
+                    <div class="item">
+                        <div class="item-label">Cantidad</div>
+                        <div class="item-value">${cantidad}</div>
+                    </div>
+                    <div class="item">
+                        <div class="item-label">Responsable</div>
+                        <div class="item-value">${responsable}</div>
+                    </div>
+                `;
 
             } catch (error) {
+                // Si ocurre un error, mostramos un mensaje
                 contentArea.innerHTML = `
                     <div class="message-box error">
                         <h2>Error</h2>
