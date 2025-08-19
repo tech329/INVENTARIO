@@ -63,7 +63,7 @@
 <body>
     <div class="card">
         <div class="header">
-            <img src="https://i.postimg.cc/zBPmbxNT/TRANSPARENTE-min.png" alt="Logo de la Empresa" class="logo" with:"100px">
+            <img src="https://i.postimg.cc/zBPmbxNT/TRANSPARENTE-min.png" alt="Logo de la Empresa" class="logo" height="100px">
         </div>
         <div class="content" id="content-area">
             <!-- El contenido se generará aquí con JavaScript -->
@@ -71,46 +71,75 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const contentArea = document.getElementById('content-area');
+        // --- ¡CONFIGURACIÓN IMPORTANTE! ---
+        // Pega aquí la URL de tu API de Apps Script (la de respaldo).
+        const API_URL = "https://script.google.com/macros/s/AKfycbygAS6p41UE0YNoh7JO-SQpmF8YB4VyPMBOE6SZQA584jfGY3buOFjXIuUDk21jeaPO/exec";
+
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const params = new URLSearchParams(window.location.search);
-
-                // Leemos los datos directamente de la URL
                 const descripcion = params.get('desc');
                 const cantidad = params.get('cant');
                 const responsable = params.get('resp');
 
-                if (!descripcion || !cantidad || !responsable) {
-                    throw new Error("Faltan datos en la URL. El QR podría ser inválido.");
+                // --- LÓGICA HÍBRIDA ---
+                if (descripcion && cantidad && responsable) {
+                    // CASO 1: Datos en la URL (Rápido)
+                    renderData({ descripcion, cantidad, responsable });
+                } else {
+                    // CASO 2: Se necesita llamar a la API (Seguro)
+                    const codigo = params.get('codigo');
+                    if (!codigo) {
+                        throw new Error("No se encontraron datos válidos en el QR.");
+                    }
+                    renderLoading(); // Muestra "Cargando..."
+                    
+                    const response = await fetch(`${API_URL}?codigo=${encodeURIComponent(codigo)}`);
+                    if (!response.ok) throw new Error("Error de red al contactar la API.");
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        renderData(result.data);
+                    } else {
+                        throw new Error(result.error);
+                    }
                 }
-
-                // Creamos y añadimos el HTML dinámicamente
-                contentArea.innerHTML = `
-                    <div class="item">
-                        <div class="item-label">Descripción</div>
-                        <div class="item-value">${descripcion}</div>
-                    </div>
-                    <div class="item">
-                        <div class="item-label">Cantidad</div>
-                        <div class="item-value">${cantidad}</div>
-                    </div>
-                    <div class="item">
-                        <div class="item-label">Responsable</div>
-                        <div class="item-value">${responsable}</div>
-                    </div>
-                `;
-
             } catch (error) {
-                // Si ocurre un error, mostramos un mensaje
-                contentArea.innerHTML = `
-                    <div class="message-box error">
-                        <h2>Error</h2>
-                        <p>${error.message}</p>
-                    </div>
-                `;
+                renderError(error.message);
             }
         });
+
+        function renderData(data) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="item">
+                    <div class="item-label">Descripción</div>
+                    <div class="item-value">${data.descripcion}</div>
+                </div>
+                <div class="item">
+                    <div class="item-label">Cantidad</div>
+                    <div class="item-value">${data.cantidad}</div>
+                </div>
+                <div class="item">
+                    <div class="item-label">Responsable</div>
+                    <div class="item-value">${data.responsable}</div>
+                </div>
+            `;
+        }
+
+        function renderLoading() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="item"><div class="item-label">Descripción</div><div class="item-value">Cargando...</div></div>
+                <div class="item"><div class="item-label">Cantidad</div><div class="item-value">Cargando...</div></div>
+                <div class="item"><div class="item-label">Responsable</div><div class="item-value">Cargando...</div></div>
+            `;
+        }
+
+        function renderError(message) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `<div class="message-box error"><h2>Error</h2><p>${message}</p></div>`;
+        }
     </script>
 </body>
 </html>
